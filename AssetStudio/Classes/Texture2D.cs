@@ -131,7 +131,7 @@ namespace AssetStudio
                     var m_IsGNFTexture = reader.ReadBoolean();
                 }
             }
-            if (version[0] >= 2020) //2020.1 and up
+            if (version[0] >= 2020 || reader.Game.Type.IsZZZ()) //2020.1 and up
             {
                 var m_IsPreProcessed = reader.ReadBoolean();
             }
@@ -165,6 +165,12 @@ namespace AssetStudio
             {
                 var m_StreamingMipmapsPriority = reader.ReadInt32();
             }
+            //ported from ZZZ_Studio
+            if (reader.Game.Type.IsZZZ())
+            {
+                var m_IsCompressed = reader.ReadBoolean();
+                reader.AlignStream();
+            }
             m_ImageCount = reader.ReadInt32();
             var m_TextureDimension = reader.ReadInt32();
             m_TextureSettings = new GLTextureSettings(reader);
@@ -187,6 +193,11 @@ namespace AssetStudio
                 if (reader.Game.Type.IsGI() && HasExternalMipRelativeOffset(reader.serializedType))
                 {
                     var m_externalMipRelativeOffset = reader.ReadUInt32();
+                }
+                //ported from ZZZ_Studio
+                if (reader.Game.Type.IsZZZ())
+                {
+                    var m_ExternalMipRelativeIndex = reader.ReadUInt32();
                 }
                 m_StreamData = new StreamingInfo(reader);
             }

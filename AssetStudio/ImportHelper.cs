@@ -1938,6 +1938,140 @@ namespace AssetStudio
             ms.Position = 0;
             return new FileReader(reader.FullPath, ms);
         }
+
+        #region ported from Studio
+
+        public static FileReader DecryptCounterSide(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with CounterSide encryption");
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+
+            var decryptSize = Math.Min(data.Length, 212);
+            string filename = Path.GetFileNameWithoutExtension(reader.FileName);
+            var md5 = MD5.Create();
+            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(filename.ToLower()));
+            string hex = BitConverter.ToString(hash).Replace("-", string.Empty);
+            ulong[] MaskList = new[] { 0UL, 0UL, 0UL, 0UL };
+            MaskList[0] = UInt64.Parse(hex.Substring(0, 16), System.Globalization.NumberStyles.HexNumber);
+            MaskList[1] = UInt64.Parse(hex.Substring(16, 16), System.Globalization.NumberStyles.HexNumber);
+            MaskList[2] = UInt64.Parse(hex.Substring(0, 8) + hex.Substring(16, 8), System.Globalization.NumberStyles.HexNumber);
+            MaskList[3] = UInt64.Parse(hex.Substring(8, 8) + hex.Substring(24, 8), System.Globalization.NumberStyles.HexNumber);
+            var pos = 0;
+            var maskPos = 0;
+            while (pos < decryptSize)
+            {
+                if (decryptSize - pos > 7)
+                {
+                    var value = BitConverter.ToUInt64(data, pos);
+                    value ^= MaskList[maskPos];
+                    Buffer.BlockCopy(BitConverter.GetBytes(value), 0, data, pos, 8);
+                    pos += 8;
+                }
+                else
+                {
+                    var p = 0;
+                    while (pos + p < decryptSize)
+                    {
+                        data[pos + p] ^= (byte)((0xFFFFFFFFFFFFFFFF >> p) & MaskList[maskPos]);
+                        p += 1;
+                    }
+                    pos = decryptSize;
+                }
+                maskPos = (maskPos + 1) % 4;
+            }
+
+            MemoryStream ms = new();
+            ms.Write(data);
+            ms.Position = 0;
+            return new FileReader(reader.FullPath, ms);
+        }
+
+        public static FileReader DecryptXinYueTongXing(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with XinYueTongXing encryption");
+
+            var data = reader.ReadBytes((int)reader.Remaining);
+
+            byte[] salt = Encoding.UTF8.GetBytes(reader.FileName.Replace(".ab", ""));
+
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                byte[] hashval = sha1.ComputeHash(Encoding.UTF8.GetBytes("System.Byte[]").Concat(salt).ToArray());
+                for (int i = 0; i < 100 - 1; i++)
+                {
+                    hashval = sha1.ComputeHash(hashval);
+                }
+                byte[] hashder = sha1.ComputeHash(hashval);
+                int index = 1;
+                while (hashder.Length < 32)
+                {
+                    hashder = hashder.Concat(sha1.ComputeHash(new byte[] { (byte)(index + 48) }.Concat(hashval).ToArray())).ToArray();
+                    index++;
+                }
+                byte[] key = hashder.Take(32).ToArray();
+
+                using Aes aes = Aes.Create();
+                aes.Key = key;
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+
+                byte[] counter = new byte[16];
+                Array.Copy(salt, 0, counter, 0, Math.Min(salt.Length, 16));
+
+                using MemoryStream ms = new MemoryStream();
+                using CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+                cs.Write(counter, 0, counter.Length);
+                cs.FlushFinalBlock();
+                byte[] encryptedCounter = ms.ToArray();
+                byte[] decryptedData = new byte[data.Length];
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    decryptedData[i] = (byte)(data[i] ^ encryptedCounter[i % 16]);
+                }
+
+                MemoryStream resultStream = new MemoryStream();
+                resultStream.Write(decryptedData, 0, decryptedData.Length);
+                resultStream.Position = 0;
+                return new FileReader(reader.FullPath, resultStream);
+            }
+        }
+
+        public static FileReader DecryptMagicalNutIkuno(FileReader reader)
+        {
+            Logger.Verbose($"Attempting to decrypt file {reader.FileName} with MagicalNutIkuno encryption");
+
+            var sign = reader.ReadBytes(7);
+            if (Encoding.UTF8.GetString(sign) == "UnityFS")
+            {
+                Logger.Verbose("File is not encrypted, returning original reader");
+                reader.Position = 0;
+                return reader;
+            }
+
+            reader.Position = 0;
+            var data = reader.ReadBytes((int)reader.Remaining);
+            byte[] encryptedData = Convert.FromBase64CharArray(Encoding.ASCII.GetChars(data), 0, data.Length);
+
+            using Aes aes = Aes.Create();
+            aes.Key = Encoding.UTF8.GetBytes("a65376ecf86139e3");
+            aes.IV = Encoding.UTF8.GetBytes("740c13ccc6f5e61d");
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            var encryptor = aes.CreateDecryptor();
+
+            using MemoryStream ms = new MemoryStream(encryptedData);
+            using CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Read);
+            byte[] decryptedData = new byte[encryptedData.Length];
+            int bytesRead = cs.Read(decryptedData, 0, decryptedData.Length);
+            MemoryStream resultStream = new MemoryStream();
+            resultStream.Write(decryptedData, 0, decryptedData.Length);
+            resultStream.Position = 0;
+            return new FileReader(reader.FullPath, resultStream);
+        }
+
+        #endregion
     }
 
 }

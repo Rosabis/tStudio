@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AssetStudio
 {
-    public class UnityCN
+    public class UnityCN : IUnityCN
     {
         private const string Signature = "#$unity3dchina!@";
         private const string Signature2 = "#$manjuuunity*!@";

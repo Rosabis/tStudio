@@ -16,6 +16,7 @@ namespace AssetStudio
         private static readonly byte[] zipMagic = { 0x50, 0x4B, 0x03, 0x04 };
         private static readonly byte[] zipSpannedMagic = { 0x50, 0x4B, 0x07, 0x08 };
         private static readonly byte[] mhy0Magic = { 0x6D, 0x68, 0x79, 0x30 };
+        private static readonly byte[] mhy1Magic = { 0x6D, 0x68, 0x79, 0x31 };
         private static readonly byte[] blbMagic = { 0x42, 0x6C, 0x62, 0x02 };
         private static readonly byte[] narakaMagic = { 0x15, 0x1E, 0x1C, 0x0D, 0x0D, 0x23, 0x21 };
         private static readonly byte[] gunfireMagic = { 0x7C, 0x6D, 0x79, 0x72, 0x27, 0x7A, 0x73, 0x78, 0x3F };
@@ -54,6 +55,7 @@ namespace AssetStudio
                 case "UnityKHNFS":
                     return FileType.BundleFile;
                 case "UnityWebData1.0":
+                case "TuanjieWebData1.0":
                     return FileType.WebFile;
                 case "blk":
                     return FileType.BlkFile;
@@ -100,7 +102,7 @@ namespace AssetStudio
                         }
 
                         //Logger.Verbose($"Parsed signature does not match with expected signature {Convert.ToHexString(zipMagic)} or {Convert.ToHexString(zipSpannedMagic)}");
-                        if (mhy0Magic.SequenceEqual(magic))
+                        if (mhy0Magic.SequenceEqual(magic) || mhy1Magic.SequenceEqual(magic))
                         {
                             return FileType.MhyFile;
                         }
@@ -218,6 +220,7 @@ namespace AssetStudio
                         break;
                     case GameType.OPFP:
                     case GameType.FakeHeader:
+                    case GameType.UnityCNWithFakeHeader:
                     case GameType.ShiningNikki:
                         reader = ParseFakeHeader(reader);
                         break;
@@ -323,6 +326,16 @@ namespace AssetStudio
                     case GameType.ROTWGW:
                         reader = DecryptROTWGW(reader);
                         break;
+                    //ported from Studio
+                    case GameType.CounterSide:
+                        reader = DecryptCounterSide(reader);
+                        break;
+                    case GameType.XinYueTongXing:
+                        reader = DecryptXinYueTongXing(reader);
+                        break;
+                    case GameType.MagicalNutIkuno:
+                        reader = DecryptMagicalNutIkuno(reader);
+                        break;
 
                 }
             }
@@ -350,6 +363,11 @@ namespace AssetStudio
                 reader.Position = 0;
             }
 
+            //ported from ZZZ_Studio
+            if (reader.FileType == FileType.MhyFile && (game.Type.IsZZZCB2() || game.Type.IsZZZ()))
+            {
+                reader.FileType = FileType.BlockFile;
+            }
 
             //Logger.Verbose("No preprocessing is needed");
             return reader;

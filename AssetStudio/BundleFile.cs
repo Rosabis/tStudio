@@ -313,7 +313,7 @@ namespace AssetStudio
         }
 
         private Game Game;
-        private UnityCN UnityCN;
+        private IUnityCN UnityCN;
 
         public Header m_Header;
         public List<Node> m_DirectoryInfo;
@@ -355,7 +355,7 @@ namespace AssetStudio
                     }
                     if (game.Type.IsHeartopia())
                     {
-                        UnityCN.SetKey("3237763848784C497074677577334A6E");
+                        AssetStudio.UnityCN.SetKey("3237763848784C497074677577334A6E");
                         ReadUnityCN(reader);
                       
                     }
@@ -692,7 +692,14 @@ FilterBlocksWithRemaining(List<StorageBlock> blocks, Node dirInfo)
             {
 
                 Logger.Verbose($"Encryption flag exist, file is encrypted, attempting to decrypt");
-                UnityCN = new UnityCN(reader);
+                if (Game.Type.IsGuiLongChao())
+                {
+                    UnityCN = new UnityCNGuiLongChao(reader);
+                }
+                else
+                {
+                    UnityCN = new UnityCN(reader);
+                }
             }
         }
 
@@ -1042,6 +1049,7 @@ FilterBlocksWithRemaining(List<StorageBlock> blocks, Node dirInfo)
                             break;
                         }
                     case CompressionType.Lz4Inv when Game.Type.IsArknightsEndfield():
+                    case CompressionType.Lzham when Game.Type.IsArknights():
                         {
                             var compressedSize = (int)blockInfo.compressedSize;
                             var uncompressedSize = (int)blockInfo.uncompressedSize;
@@ -1055,7 +1063,7 @@ FilterBlocksWithRemaining(List<StorageBlock> blocks, Node dirInfo)
                             try
                             {
                                 reader.Read(compressedBytesSpan);
-                                if (i == 0)
+                                if (i == 0 && Game.Type.IsArknightsEndfield())
                                 {
                                     FairGuardUtils.Decrypt(compressedBytesSpan);
                                 }

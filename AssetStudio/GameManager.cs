@@ -77,6 +77,16 @@ namespace AssetStudio
             Games.Add(index++, new TCTUtils.WildRift(GameType.WildRift, WildRift_SM4Key, WildRift_SM4IV, WildRift_ZUCKey, WildRift_ZUCIV, WildRift_ChaCha20Constants, WildRift_ChaCha20Key, WildRift_ChaCha20IV, WildRift_HC128Key, WildRift_HC128IV));
             Games.Add(index++, new Game(GameType.HOTD));
             Games.Add(index++, new Game(GameType.ROTWGW));
+            //ported from Studio
+            Games.Add(index++, new Game(GameType.UnityCNWithFakeHeader));
+            Games.Add(index++, new Game("归龙潮", GameType.GuiLongChao));
+            Games.Add(index++, new Game(GameType.CounterSide));
+            Games.Add(index++, new Game("新月同行", GameType.XinYueTongXing));
+            Games.Add(index++, new Game(GameType.Arknights));
+            Games.Add(index++, new Game("魔栗少女☆依久乃", GameType.MagicalNutIkuno));
+            //ported from ZZZ_Studio
+            Games.Add(index++, new Mhy(GameType.ZZZ_CB2, GIMhyShiftRow, GIMhyKey, GIMhyMul, null, GISBox, null, 0uL));
+            Games.Add(index++, new Mhy(GameType.ZZZ, GIMhyShiftRow, GIMhyKey, GIMhyMul, null, GISBox, null, 0uL));
         }
 
 
@@ -115,6 +125,11 @@ namespace AssetStudio
             Name = type.ToString();
             Type = type;
             Ext = ext;
+        }
+        public Game(string name, GameType type)
+        {
+            Name = name;
+            Type = type;
         }
 
         public sealed override string ToString() => Name;
@@ -234,7 +249,17 @@ namespace AssetStudio
         TFTCN,
         WildRift,
         HOTD,
-        ROTWGW
+        ROTWGW,
+        //ported from Studio
+        UnityCNWithFakeHeader,
+        GuiLongChao,
+        CounterSide,
+        XinYueTongXing,
+        Arknights,
+        MagicalNutIkuno,
+        //ported from ZZZ_Studio
+        ZZZ_CB2,
+        ZZZ
     }
 
     public static class GameTypes
@@ -242,7 +267,13 @@ namespace AssetStudio
         public static bool isMultiBundle { get; set; }
 
         public static bool IsNormal(this GameType type) => type == GameType.Normal;
-        public static bool IsUnityCN(this GameType type) => type == GameType.UnityCN;
+        public static bool IsUnityCN(this GameType type) => type == GameType.UnityCN || type == GameType.UnityCNWithFakeHeader || type == GameType.GuiLongChao;
+        public static bool IsUnityCNWithFakeHeader(this GameType type) => type == GameType.UnityCNWithFakeHeader;
+        public static bool IsGuiLongChao(this GameType type) => type == GameType.GuiLongChao;
+        public static bool IsCounterSide(this GameType type) => type == GameType.CounterSide;
+        public static bool IsXinYueTongXing(this GameType type) => type == GameType.XinYueTongXing;
+        public static bool IsArknights(this GameType type) => type == GameType.Arknights;
+        public static bool IsMagicalNutIkuno(this GameType type) => type == GameType.MagicalNutIkuno;
         public static bool IsGI(this GameType type) => type == GameType.GI;
         public static bool IsGIPack(this GameType type) => type == GameType.GI_Pack;
         public static bool IsGICB1(this GameType type) => type == GameType.GI_CB1;
@@ -253,6 +284,8 @@ namespace AssetStudio
         public static bool IsBH3Pre(this GameType type) => type == GameType.BH3Pre;
         public static bool IsBH3PrePre(this GameType type) => type == GameType.BH3PrePre;
         public static bool IsZZZCB1(this GameType type) => type == GameType.ZZZ_CB1;
+        public static bool IsZZZCB2(this GameType type) => type == GameType.ZZZ_CB2;
+        public static bool IsZZZ(this GameType type) => type == GameType.ZZZ;
         public static bool IsSRCB2(this GameType type) => type == GameType.SR_CB2;
         public static bool IsSR(this GameType type) => type == GameType.SR;
         public static bool IsTOT(this GameType type) => type == GameType.TOT;
@@ -326,7 +359,10 @@ namespace AssetStudio
                 GameType.SR or
                 GameType.GI_Pack or
                 GameType.TOT or
-                GameType.ArknightsEndfield => true,
+                GameType.ArknightsEndfield or
+                GameType.GuiLongChao or
+                GameType.ZZZ_CB2 or
+                GameType.ZZZ => true,
 
                 _ => false,
             };
@@ -334,7 +370,7 @@ namespace AssetStudio
 
         public static bool IsMhyGroup(this GameType type) => type switch
         {
-            GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre or GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre or GameType.SR_CB2 or GameType.SR or GameType.ZZZ_CB1 or GameType.TOT => true,
+            GameType.GI or GameType.GI_Pack or GameType.GI_CB1 or GameType.GI_CB2 or GameType.GI_CB3 or GameType.GI_CB3Pre or GameType.BH3 or GameType.BH3Pre or GameType.BH3PrePre or GameType.SR_CB2 or GameType.SR or GameType.ZZZ_CB1 or GameType.ZZZ_CB2 or GameType.ZZZ or GameType.TOT => true,
             _ => false,
         };
     }
